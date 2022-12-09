@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+
+    minio:
+        hostname: minio
+        container_name: minio
+        image: minio/minio:latest
+        networks:
+          vpcbr:
+            ipv4_address: 10.5.0.3
+        restart: always
+        ports:
+            - "127.0.0.1:9001:9000"
+            - "127.0.0.1:9002:9001"
+        environment:
+            MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+            MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+            MINIO_SERVER_URL: http://s3.example.com
+            MINIO_BROWSER_REDIRECT_URL: http://s3-manage.example.com
+            MINIO_DOMAIN: s3.example.com
+        command: server --console-address :9001 /data
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://minio:9000/minio/health/live"]
+            interval: 1m30s
+            timeout: 20s
+            retries: 3
+            start_period: 3m
+        volumes:
+            - /data/my-fancy-local-storage:/data
+            - ./hosts:/etc/hosts
+
+    nginx:
+        hostname: nginx
+        container_name: nginx
+        image: nginx:latest
+        networks:
+          vpcbr:
+            ipv4_address: 10.5.0.4
+        ports:
+            - "443:443"
+            - "80:80"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
+            interval: 1m30s
+            timeout: 20s
+            retries: 3
+            start_period: 3m
+        restart: unless-stopped
+        volumes:
+            - ./virtualhost01.conf:/etc/nginx/conf.d/virtualhost01.conf
+            - ./virtualhost02.conf:/etc/nginx/conf.d/virtualhost02.conf
+            - ./hosts:/etc/hosts
+        depends_on:
+            - minio
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+         gateway: 10.5.0.1
+         aux_addresses:
+          mysql: 10.5.0.5
+          apigw-minio: 10.5.0.6
