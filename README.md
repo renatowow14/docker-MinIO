@@ -1,4 +1,4 @@
-# LAPIG MinIO
+#MinIO
 ![image](https://user-images.githubusercontent.com/26287257/172414742-b51521c4-37aa-4c73-9aa3-5c912b3c88ed.png)
 
 ### Building the image
